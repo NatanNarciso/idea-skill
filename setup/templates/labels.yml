@@ -1,0 +1,49 @@
+# Standard label set. Edit freely — sync-labels.sh re-reads this file
+# every time, so changes here just need a re-run to apply.
+
+# Type (what it is)
+- name: "type:bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+- name: "type:feature"
+  color: "a2eeef"
+  description: "New feature"
+- name: "type:chore"
+  color: "cfd3d7"
+  description: "Maintenance, tech debt, dependencies"
+- name: "type:docs"
+  color: "0075ca"
+  description: "Documentation"
+
+# Priority (urgency)
+- name: "priority:P0"
+  color: "b60205"
+  description: "Critical — blocks production"
+- name: "priority:P1"
+  color: "d93f0b"
+  description: "High — next delivery"
+- name: "priority:P2"
+  color: "fbca04"
+  description: "Medium — planned"
+- name: "priority:P3"
+  color: "c2e0c6"
+  description: "Low — nice to have"
+
+# Status (flow, beyond the board columns)
+- name: "status:blocked"
+  color: "000000"
+  description: "Blocked by an external dependency"
+- name: "status:needs-review"
+  color: "5319e7"
+  description: "Awaiting review"
+
+# Size (quick estimate, optional)
+- name: "size:S"
+  color: "c5def5"
+  description: "A few hours"
+- name: "size:M"
+  color: "bfd4f2"
+  description: "1-2 days"
+- name: "size:L"
+  color: "9cc0f2"
+  description: "3+ days — consider splitting into smaller issues"

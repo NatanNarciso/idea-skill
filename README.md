@@ -1,12 +1,15 @@
 # idea-skill
 
-**Say an idea, get a tagged GitHub issue on the right Kanban board.**
+**Say an idea, get a tagged GitHub issue on the right Kanban board — and
+when a plan is ready to build, let it ride the same board all the way to
+a merged PR.**
 
-A [Claude Code](https://claude.com/claude-code) skill + a one-shot setup
-script that gives every repo you own the same lightweight workflow: issue
-templates, standard labels, and a GitHub Projects (v2) board with 5 columns
-and a due-date field — wired together so a loose sentence becomes a fully
-tagged issue, already placed on the board, with zero manual clicking.
+A pair of [Claude Code](https://claude.com/claude-code) skills + a
+one-shot setup script that give every repo you own the same lightweight
+workflow: issue templates, standard labels, and a GitHub Projects (v2)
+board with 5 columns and a due-date field — wired together so a loose
+sentence becomes a fully tagged issue, and an approved plan turns into
+issue → branch → PR → merge, with zero manual clicking either way.
 
 ```
 you:  /idea billing-service: webhook retries aren't backing off, prod is noisy, priority high
@@ -18,6 +21,22 @@ Claude:
   → https://github.com/users/NatanNarciso/projects/11
 ```
 
+```
+you:  [approves a plan Claude proposed in plan mode]
+
+Claude:
+  - created NatanNarciso/billing-service#43 (type:feature, priority:P2), board column: In Progress
+  - branch feat/43-webhook-backoff created, implementing...
+  ...
+  - implementation ready — open the PR?
+you:  yes
+Claude:
+  - opened PR #44 (Closes #43), board column: In Review — merge?
+you:  yes
+Claude:
+  - merged, issue #43 closed, board column: Done
+```
+
 No dashboard, no browser tab, no "let me go open a new issue real quick."
 
 ## Why this exists
@@ -26,7 +45,13 @@ Backlog friction is the reason ideas die mid-thought: you're mid-conversation
 with an AI pair programmer, a good idea comes up, and by the time you've
 switched to GitHub, picked the right repo, filled the issue form, added
 labels, and dragged the card to the right column, the idea — or the
-momentum — is gone. This collapses that whole sequence into one sentence.
+momentum — is gone. `/idea` collapses that whole sequence into one sentence.
+
+The same friction shows up on the other end of the cycle: a plan gets
+approved and then someone still has to open the issue, cut the branch,
+open the PR, link it, merge it, and close the issue by hand. `ship`
+collapses that sequence too — it's the same board, the same labels, just
+triggered by plan approval instead of a loose sentence.
 
 ## What you get, per repo
 
@@ -37,7 +62,10 @@ momentum — is gone. This collapses that whole sequence into one sentence.
 - `CONTRIBUTING.md` documenting the flow (issue → branch → PR → squash merge)
 - A GitHub Projects board: **Backlog → Todo → In Progress → In Review → Done**,
   plus a **Due date** field
-- The `/idea` command wired to that board
+- The `/idea` command wired to that board — loose thought in, tagged
+  Backlog card out
+- The `ship` skill wired to the same board — approved plan in, merged PR
+  and closed issue out, moving the card across the board as it goes
 
 ## Requirements
 
@@ -49,7 +77,7 @@ momentum — is gone. This collapses that whole sequence into one sentence.
   ```
   (opens a device-code flow in your browser)
 - [Claude Code](https://claude.com/claude-code), for the `/idea` command
-  itself (the setup script alone works without it)
+  and the `ship` skill themselves (the setup script alone works without it)
 
 ## Quickstart
 
@@ -73,12 +101,18 @@ rewrites the default "Status" field into the 5 columns above, adds the
 review the diff and push when you're happy with it). At the end it prints
 a ready-to-paste JSON snippet for the registry.
 
-**3. Install the skill** (once, works across every repo):
+**3. Install the skills** (once, works across every repo):
 
 ```bash
 mkdir -p ~/.claude/skills
 cp -r /path/to/idea-skill/skills/idea ~/.claude/skills/idea
+cp -r /path/to/idea-skill/skills/ship ~/.claude/skills/ship
 ```
+
+`/idea` is invoked by name (or things like "file an issue for..."). `ship`
+has no command — it fires on its own whenever you approve a plan (via
+Claude Code's plan mode) in a registered project. Install just one of the
+two if you only want one half of the workflow.
 
 **4. Create your registry** at `~/.claude/idea-projects.json`, pasting in
 the snippet `setup.sh` printed for each project:
@@ -102,13 +136,19 @@ the snippet `setup.sh` printed for each project:
 /idea billing-service: webhook retries need backoff, priority high
 ```
 
+And when you're ready to build something, just approve the plan Claude
+proposes — `ship` picks it up from there and takes it to a merged PR,
+asking for confirmation before it pushes, opens the PR, and merges.
+
 See [`docs/TUTORIAL.md`](docs/TUTORIAL.md) for the full walkthrough with
 screenshots-in-words and troubleshooting.
 
 ## How it works
 
-Nothing here is magic — it's `gh cli` calls a human would type, just
-sequenced and given a natural-language front end:
+Nothing here is magic — it's `gh cli` (and plain `git`) calls a human
+would type, just sequenced and given a natural-language front end.
+
+`/idea`:
 
 1. `gh issue create` — with `--label type:X --label priority:PN`
 2. `gh project item-add` — puts the issue on the board
@@ -116,6 +156,18 @@ sequenced and given a natural-language front end:
    without depending on any GitHub-side "auto-add" automation
 4. `gh project item-edit --field "Due date" --date ...` — only if a date
    was mentioned
+
+`ship` (triggered by an approved plan, not typed):
+
+1. `gh issue create` + `gh project item-add` + `item-edit --value "In Progress"`
+   — same as above, but skips straight past `Backlog`/`Todo` since work
+   starts immediately
+2. `git checkout -b <type>/<issue-number>-<slug>` off the default branch
+3. implementation happens as normal commits on that branch
+4. once you approve the result: `git push`, `gh pr create` with
+   `Closes #<N>` in the body, `item-edit --value "In Review"`
+5. once you approve the merge: `gh pr merge --squash --delete-branch`,
+   `item-edit --value "Done"` — the issue closes itself via `Closes #<N>`
 
 The one non-obvious piece: GitHub Projects' default **Status** field ships
 hardcoded with `Todo / In Progress / Done`, and `gh cli` refuses to delete
@@ -148,7 +200,14 @@ Worth knowing even if you never use the rest of this repo.
   (or edit it per-repo afterward in `.github/labels.yml` and re-run
   `.github/scripts/sync-labels.sh`).
 - **Priority/type keyword inference**: edit the rules directly in
-  `skills/idea/SKILL.md` — it's plain instructions, not code.
+  `skills/idea/SKILL.md` (`ship` reuses the same defaults) — it's plain
+  instructions, not code.
+- **Branch naming**: `ship` uses `<type>/<issue-number>-<slug>`, matching
+  `CONTRIBUTING.md.tmpl`. Edit both `skills/ship/SKILL.md` and
+  `setup/templates/CONTRIBUTING.md.tmpl` together if you change it.
+- **Merge strategy**: `ship` always squash-merges and deletes the branch.
+  Edit the `gh pr merge` line in `skills/ship/SKILL.md` if you prefer
+  merge commits or rebase.
 - **Board columns**: edit the `singleSelectOptions` list in `setup.sh`
   before running it (changing it after the board exists means re-running
   that one GraphQL call by hand with the new list).
@@ -159,8 +218,18 @@ Worth knowing even if you never use the rest of this repo.
 plan, public or private repos, no seat limit for personal use.
 
 **What if I don't use Claude Code?** The `setup/setup.sh` script is
-standalone and useful on its own — it just won't wire up the `/idea`
-command, since that part is a Claude Code skill specifically.
+standalone and useful on its own — it just won't wire up `/idea` or
+`ship`, since those are Claude Code skills specifically.
+
+**Will `ship` ever push, open a PR, or merge without asking me first?**
+No. Creating the issue and the local branch happens automatically on plan
+approval, but pushing, opening the PR, and merging each require you to
+explicitly say yes — those touch shared/public state, this is by design,
+not a missing feature.
+
+**What if I only want one of the two skills?** They're independent —
+install just `skills/idea` or just `skills/ship` in step 3 of the
+Quickstart. `ship` doesn't require `/idea` to have been used on an issue.
 
 **Multiple repos with the same product name (e.g. a frontend/backend
 pair)?** Give them distinct registry keys but let both share an alias

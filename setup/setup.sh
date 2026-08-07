@@ -119,7 +119,8 @@ Done.
   Labels:  type:*, priority:P0-P3, status:blocked, status:needs-review, size:S/M/L
   Commit:  created locally (not pushed — review and push when ready)
 
-Add this to your registry (see skills/idea/README for the default path):
+Add this to your registry (see the main README for the default path,
+shared by both the idea and ship skills):
 
 $REGISTRY_ENTRY
 EOF

@@ -62,15 +62,23 @@ fix(queue): normalize phone number before enqueueing (#58)
 7. Delete the branch, issue closes automatically
 ```
 
-## Automation: turn an idea into an issue
+## Automation: idea-skill
 
 If you're using [idea-skill](https://github.com/NatanNarciso/idea-skill)
-with Claude Code, the `/idea` command turns a loose sentence into an issue +
-board card, already tagged with type/priority/due date:
+with Claude Code, two things run this whole cycle for you:
 
-```
-/idea __PROJECT_NAME__: revisit the retry logic on the queue, priority high
-```
+- **`/idea`** turns a loose sentence into an issue + board card, already
+  tagged with type/priority/due date:
+
+  ```
+  /idea __PROJECT_NAME__: revisit the retry logic on the queue, priority high
+  ```
+
+- **`ship`** covers steps 1–7 above end to end: approve a plan Claude
+  proposes and it creates the issue, cuts the branch (this project's
+  `<type>/<issue-number>-<slug>` convention), implements, then asks for
+  confirmation before opening the PR and before merging. No command to
+  remember — it fires on plan approval.
 
 ## Replicating this in another project
 

@@ -1,8 +1,10 @@
-# Tutorial: from zero to `/idea`
+# Tutorial: from zero to `/idea` and `ship`
 
-This walks through setting up idea-skill on a real repo, end to end. It
-assumes you already have [`gh`](https://cli.github.com/) installed and
-logged in (`gh auth login`), `jq` installed, and
+This walks through setting up idea-skill on a real repo, end to end,
+covering both skills: `/idea` (loose thought → tagged issue in Backlog)
+and `ship` (approved plan → merged PR, issue closed). It assumes you
+already have [`gh`](https://cli.github.com/) installed and logged in
+(`gh auth login`), `jq` installed, and
 [Claude Code](https://claude.com/claude-code) set up.
 
 ## 1. Clone idea-skill
@@ -87,7 +89,7 @@ Add this to your registry (see skills/idea/README for the default path):
 
 Review the commit (`git show`), then `git push` when you're happy with it.
 
-## 4. Install the skill
+## 4. Install the skills
 
 Skills live at `~/.claude/skills/<name>/SKILL.md` for a personal skill that
 works across every project (as opposed to `.claude/skills/` inside a
@@ -96,11 +98,14 @@ single repo, which only applies there).
 ```bash
 mkdir -p ~/.claude/skills
 cp -r ~/tools/idea-skill/skills/idea ~/.claude/skills/idea
+cp -r ~/tools/idea-skill/skills/ship ~/.claude/skills/ship
 ```
 
 Claude Code picks up new skills automatically at the start of a session —
 no restart needed if you're already mid-session, it'll show up listed as
-available shortly after.
+available shortly after. Install just one of the two directories if you
+only want half the workflow — `/idea` is invoked by name, `ship` fires on
+its own when you approve a plan.
 
 ## 5. Create your registry
 
@@ -124,7 +129,7 @@ Paste in the snippet `setup.sh` printed in step 3. Repeat step 3 + this
 step for every repo you want on the workflow — the JSON object just grows
 one key per project.
 
-## 6. Try it
+## 6. Try `/idea`
 
 Open a Claude Code session (any repo, doesn't have to be the one you just
 set up) and type:
@@ -140,6 +145,29 @@ board, place it in `Backlog`, and reply with both links.
 If it asks which project you meant, or says it can't find one, that's the
 skill working as intended — it's built to ask rather than guess when the
 registry doesn't clearly resolve.
+
+## 7. Try `ship`
+
+Open a Claude Code session inside the project's `local_path` and ask for
+something small enough to plan in one shot, e.g. "add a `/health` endpoint
+that returns 200". Let Claude enter plan mode and present a plan, then
+approve it.
+
+You should see, without typing any command:
+
+1. An issue created (type/priority inferred the same way as `/idea`), the
+   board card placed straight in `In Progress`.
+2. A local branch `feat/<N>-<slug>` created off the default branch.
+3. The implementation happening as normal commits.
+4. Once done, Claude stops and asks whether to open the PR — say yes.
+5. The PR opens (`Closes #<N>`), the board card moves to `In Review`,
+   Claude asks whether to merge — say yes.
+6. The PR merges (squash, branch deleted), the issue closes itself, the
+   board card moves to `Done`.
+
+If your project isn't in the registry, `ship` should say so and ask
+whether to proceed without the GitHub flow, instead of guessing or
+silently skipping steps.
 
 ## Troubleshooting
 
@@ -158,6 +186,17 @@ number in the registry.
 **Two projects share a name** (e.g. a `.Web`/`.Api` pair) — give them
 separate registry keys and let both list the shared short name as an
 alias; the skill is instructed to ask which one instead of picking one.
+
+**`ship` didn't fire after I approved a plan** — check that plan mode was
+actually used (`ExitPlanMode`) and that the cwd matches a registry
+`local_path`. `ship` is instructed to skip silently (not create a
+half-broken issue/branch) if the project doesn't resolve, so also check
+whether Claude asked a clarifying question you missed instead.
+
+**`gh pr merge` fails with a branch-protection error** — required checks
+haven't passed yet, or the branch needs an approving review. That's your
+repo's rules working as intended; wait for checks/review, then ask Claude
+to retry the merge.
 
 **I want a different set of columns** — edit the `singleSelectOptions`
 array inside `setup/setup.sh` before running it on a new repo. For a board

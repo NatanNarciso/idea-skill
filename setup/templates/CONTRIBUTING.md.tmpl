@@ -13,6 +13,12 @@ what keeps things traceable later.
 - Standard labels in `.github/labels.yml` (type / priority / status / size)
 - Kanban board (GitHub Projects): `Backlog → Todo → In Progress → In Review → Done`
   → __BOARD_URL__
+- The board also carries a `Priority` field (Urgente/Alta/Média/Baixa,
+  mirroring the `priority:P0-P3` labels) — **one-time manual step**: open
+  the board's view menu and set "Group by: Priority" (optionally "Sort
+  by: Priority" too) so higher-priority cards actually surface first.
+  This isn't scriptable via `gh`/GraphQL today, so it has to be set by
+  hand once per board.
 - Milestones = deliveries/sprints (optional)
 
 ## 2. Branches

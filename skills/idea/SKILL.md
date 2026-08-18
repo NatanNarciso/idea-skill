@@ -1,6 +1,6 @@
 ---
 name: idea
-description: Turns a loose, free-text idea into a GitHub issue with the right type/priority labels, added to the project's Kanban board in the Backlog column, with a due date set when one is mentioned. Use when the user says "/idea", "file an issue for...", "add this to the board for..." or similar.
+description: Turns a loose, free-text idea into a GitHub issue with the right type/priority labels, added to the project's Kanban board in the Backlog column with its Priority field set, and a due date when one is mentioned. Use when the user says "/idea", "file an issue for...", "add this to the board for..." or similar.
 ---
 
 # /idea — turn a loose idea into an issue on the board
@@ -98,7 +98,28 @@ gh project item-edit <project_number> --owner <github_owner> \
 This is what actually makes the card show up on the board — it doesn't
 rely on any GitHub-side automation being configured manually.
 
-## 7. Set the due date, if there is one
+## 7. Set the Priority field
+
+The board's `Priority` field (single-select) mirrors the `priority:PN`
+label so the Kanban can actually be grouped/sorted by it — map the PN
+from step 3:
+
+| Label | Priority field |
+|-------|-----------------|
+| P0    | Urgente         |
+| P1    | Alta            |
+| P2    | Média           |
+| P3    | Baixa           |
+
+```bash
+gh project item-edit <project_number> --owner <github_owner> \
+  --url <issue_url> --field "Priority" --value "<Urgente|Alta|Média|Baixa>"
+```
+
+If the board predates this field (`gh project field-list` doesn't show
+`Priority`), skip this step silently — the label is still set.
+
+## 8. Set the due date, if there is one
 
 ```bash
 gh project item-edit <project_number> --owner <github_owner> \
@@ -107,7 +128,7 @@ gh project item-edit <project_number> --owner <github_owner> \
 
 Skip this step if no due date was mentioned/inferred.
 
-## 8. Reply to the user
+## 9. Reply to the user
 
 A short response: the issue link, the board link
 (`https://github.com/users/<github_owner>/projects/<project_number>`), and

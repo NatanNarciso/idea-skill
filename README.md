@@ -1,15 +1,36 @@
 # idea-skill
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-d97757)](https://claude.com/claude-code)
+[![Requires gh cli](https://img.shields.io/badge/requires-gh%20cli-181717?logo=github)](https://cli.github.com/)
+[![GitHub Projects v2](https://img.shields.io/badge/board-GitHub%20Projects%20v2-2088ff)](https://docs.github.com/en/issues/planning-and-tracking-with-projects)
+[![Wiki](https://img.shields.io/badge/docs-wiki-8250df)](https://github.com/NatanNarciso/idea-skill/wiki)
+
 **Say an idea, get a tagged GitHub issue on the right Kanban board — and
 when a plan is ready to build, let it ride the same board all the way to
 a merged PR.**
 
-A pair of [Claude Code](https://claude.com/claude-code) skills + a
+A pair of [Claude Code](https://claude.com/claude-code) Agent Skills + a
 one-shot setup script that give every repo you own the same lightweight
-workflow: issue templates, standard labels, and a GitHub Projects (v2)
-board with 5 columns and a due-date field — wired together so a loose
-sentence becomes a fully tagged issue, and an approved plan turns into
-issue → branch → PR → merge, with zero manual clicking either way.
+project-management workflow: issue templates, standard labels, and a
+GitHub Projects (v2) Kanban board with 5 columns and a due-date field —
+wired together so a loose sentence becomes a fully tagged issue, and an
+approved plan turns into issue → branch → PR → merge, with zero manual
+clicking either way. No dashboard to babysit, no server, no API keys
+beyond what `gh` already uses — it's `gh cli` calls with a natural-language
+front end.
+
+## Contents
+
+- [Why this exists](#why-this-exists)
+- [What you get, per repo](#what-you-get-per-repo)
+- [Requirements](#requirements)
+- [Quickstart](#quickstart)
+- [How it works](#how-it-works)
+- [Customizing](#customizing)
+- [FAQ](#faq)
+- [Wiki](https://github.com/NatanNarciso/idea-skill/wiki) — full docs, troubleshooting, config reference
+- [License](#license)
 
 ```
 you:  /idea billing-service: webhook retries aren't backing off, prod is noisy, priority high
@@ -245,6 +266,17 @@ you mean when a name matches more than one entry, instead of guessing.
 just a GitHub Projects board underneath. Add fields with
 `gh project field-create`, then reference them the same way `SKILL.md`
 references `Due date`.
+
+## Contributing
+
+Bug reports, feature ideas, and PRs are welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the branch/commit/PR conventions
+this repo follows (it's the same workflow `idea-skill` automates). Fittingly,
+this project's own issues live on its own `/idea`-managed board:
+[project #10](https://github.com/users/NatanNarciso/projects/10).
+
+If this saved you the "let me go open a new issue real quick" tax, a ⭐
+on the repo helps other people find it.
 
 ## License
 

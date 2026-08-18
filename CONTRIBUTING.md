@@ -1,0 +1,87 @@
+# Development workflow
+
+Standard model used on this and other projects. Based on GitHub Flow +
+Conventional Commits — light enough for a solo project, scales to a team.
+
+## 1. Backlog (Issues)
+
+Every task (bug, feature, chore) becomes an **issue** before it becomes
+code. No "invisible" work straight into a branch without an issue — that's
+what keeps things traceable later.
+
+- Templates in `.github/ISSUE_TEMPLATE/` (bug, feature, chore)
+- Standard labels in `.github/labels.yml` (type / priority / status / size)
+- Kanban board (GitHub Projects): `Backlog → Todo → In Progress → In Review → Done`
+  → https://github.com/users/NatanNarciso/projects/10
+- Milestones = deliveries/sprints (optional)
+
+## 2. Branches
+
+`master` is always deployable. All work happens on a branch cut
+from it.
+
+Naming convention: `<type>/<issue-number>-<short-description>`
+
+```
+feat/42-batch-sending
+fix/58-normalize-phone
+chore/61-bump-dependencies
+```
+
+## 3. Commits — Conventional Commits
+
+```
+<type>(<optional scope>): <short imperative description>
+```
+
+Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `style`, `perf`
+
+```
+feat(queue): add direct-send support
+fix(queue): normalize phone number before enqueueing (#58)
+```
+
+## 4. Pull Requests
+
+- Always linked to an issue (`Closes #42` in the PR template)
+- Template in `.github/PULL_REQUEST_TEMPLATE.md`
+- Small PR > giant PR — if it's hard to review, split it
+- CI (if any) must pass before merge
+- **Squash merge** into `master` — keeps one commit per PR in the main history
+- Delete the branch after merging
+
+## 5. Full cycle
+
+```
+1. Open an issue (what and why)
+2. Create a branch from master (feat/42-...)
+3. Small, descriptive commits
+4. Open a PR (Closes #42) as soon as it's reviewable
+5. Review (even solo: review your own diff before merging)
+6. Squash merge → master
+7. Delete the branch, issue closes automatically
+```
+
+## Automation: idea-skill
+
+If you're using [idea-skill](https://github.com/NatanNarciso/idea-skill)
+with Claude Code, two things run this whole cycle for you:
+
+- **`/idea`** turns a loose sentence into an issue + board card, already
+  tagged with type/priority/due date:
+
+  ```
+  /idea idea-skill: revisit the retry logic on the queue, priority high
+  ```
+
+- **`ship`** covers steps 1–7 above end to end: approve a plan Claude
+  proposes and it creates the issue, cuts the branch (this project's
+  `<type>/<issue-number>-<slug>` convention), implements, then asks for
+  confirmation before opening the PR and before merging. No command to
+  remember — it fires on plan approval.
+
+## Replicating this in another project
+
+Run `setup.sh` from [idea-skill](https://github.com/NatanNarciso/idea-skill)
+from inside the new repo — it copies these files, syncs labels, and creates
+the board in one shot. See that repo's README for details.

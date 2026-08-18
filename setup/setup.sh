@@ -3,7 +3,8 @@
 #   - issue/PR templates + CONTRIBUTING.md
 #   - standard labels (type/priority/status/size)
 #   - a GitHub Projects (v2) board with 5 columns (Backlog/Todo/In
-#     Progress/In Review/Done) and a "Due date" date field
+#     Progress/In Review/Done), a "Due date" date field, and a
+#     "Priority" single-select field (Urgente/Alta/Média/Baixa)
 #
 # Usage: run from inside the target repo (must have a GitHub remote).
 #   bash /path/to/idea-skill/setup/setup.sh [--title "Project Name"]
@@ -90,6 +91,11 @@ mutation($fieldId: ID!) {
 echo "-- Adding the 'Due date' field"
 gh project field-create "$PROJECT_NUMBER" --owner "$OWNER" --name "Due date" --data-type DATE >/dev/null
 
+echo "-- Adding the 'Priority' field"
+# P0-P3 (see labels.yml) map to these options: P0=Urgente, P1=Alta, P2=Média, P3=Baixa.
+gh project field-create "$PROJECT_NUMBER" --owner "$OWNER" --name "Priority" \
+  --data-type SINGLE_SELECT --single-select-options "Urgente,Alta,Média,Baixa" >/dev/null
+
 echo "-- Writing CONTRIBUTING.md"
 sed -e "s#__BOARD_URL__#$BOARD_URL#g" \
     -e "s#__DEFAULT_BRANCH__#$BRANCH#g" \
@@ -117,7 +123,13 @@ Done.
 
   Board:   $BOARD_URL
   Labels:  type:*, priority:P0-P3, status:blocked, status:needs-review, size:S/M/L
+  Fields:  Due date, Priority (Urgente/Alta/Média/Baixa)
   Commit:  created locally (not pushed — review and push when ready)
+
+Manual step (not scriptable via gh/GraphQL today): open the board, go to
+the view menu, and set "Group by: Priority" (optionally "Sort by:
+Priority" too) so the Kanban actually surfaces higher-priority cards
+first.
 
 Add this to your registry (see the main README for the default path,
 shared by both the idea and ship skills):

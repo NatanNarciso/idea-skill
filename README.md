@@ -61,11 +61,14 @@ triggered by plan approval instead of a loose sentence.
   `status:blocked`/`status:needs-review`, `size:S/M/L`
 - `CONTRIBUTING.md` documenting the flow (issue → branch → PR → squash merge)
 - A GitHub Projects board: **Backlog → Todo → In Progress → In Review → Done**,
-  plus a **Due date** field
+  plus a **Due date** field and a **Priority** field (Urgente/Alta/Média/Baixa,
+  mirroring the `priority:P0-P3` labels — group/sort the board by it to
+  keep the Kanban actually ordered by urgency)
 - The `/idea` command wired to that board — loose thought in, tagged
-  Backlog card out
-- The `ship` skill wired to the same board — approved plan in, merged PR
-  and closed issue out, moving the card across the board as it goes
+  Backlog card out, Priority field set
+- The `ship` skill wired to the same board — approved plan **or an
+  existing tracked issue** in, merged PR and closed issue out, moving the
+  card across the board as it goes
 
 ## Requirements
 
@@ -97,9 +100,11 @@ bash /path/to/idea-skill/setup/setup.sh --title "Billing Service"
 
 This creates the templates, syncs the labels, creates and links the board,
 rewrites the default "Status" field into the 5 columns above, adds the
-`Due date` field, and commits everything locally (it does **not** push —
-review the diff and push when you're happy with it). At the end it prints
-a ready-to-paste JSON snippet for the registry.
+`Due date` and `Priority` fields, and commits everything locally (it does
+**not** push — review the diff and push when you're happy with it). At
+the end it prints a ready-to-paste JSON snippet for the registry, plus a
+reminder to group the board by `Priority` by hand (one GitHub UI setting
+that isn't scriptable yet).
 
 **3. Install the skills** (once, works across every repo):
 

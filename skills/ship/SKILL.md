@@ -1,33 +1,39 @@
 ---
 name: ship
-description: Takes an approved plan (Claude Code plan mode) all the way to a merged PR and a closed issue — creates the GitHub issue, cuts the branch, implements, opens a linked PR, and merges it with confirmation, moving the card across the Kanban board (Backlog → In Progress → In Review → Done). Fires automatically whenever a feature/fix/chore plan is approved (ExitPlanMode) in a registered project — no command needed.
+description: Takes work all the way to a merged PR and a closed issue — either a freshly approved plan (Claude Code plan mode) or an existing tracked issue the user is resuming — creating the GitHub issue if needed, cutting the branch, implementing, opening a linked PR, and merging it with confirmation, moving the card across the Kanban board (Backlog/Todo → In Progress → In Review → Done) with its Priority field set. Fires automatically whenever a feature/fix/chore plan is approved (ExitPlanMode) in a registered project, or whenever the user asks to start/resume work on an issue already tracked on a registered project's board — no command needed.
 ---
 
-# ship — from approved plan to merged PR
+# ship — from approved plan (or existing issue) to merged PR
 
 Part of [idea-skill](https://github.com/NatanNarciso/idea-skill): the
 `/idea` skill turns a loose thought into a tagged issue sitting in
 `Backlog`, waiting to be picked up later. This skill is the other half —
-it covers plans that are about to be worked on **right now**: issue →
-branch → implementation → PR → merge → issue closed, driven by the same
-registry, labels, and board as `/idea`, with zero manual GitHub clicking.
+it covers work that's about to happen **right now**, whether that's a
+brand-new plan or an issue that's already sitting on the board: branch →
+implementation → PR → merge → issue closed, driven by the same registry,
+labels, and board as `/idea`, with zero manual GitHub clicking.
 
 Everything below is `gh cli` plus normal `git`, sequenced — no extra
 infrastructure.
 
 ## When this fires
 
-Automatically, without the user typing anything, when **all** of these
-hold:
+Automatically, without the user typing a command, whenever **either** of
+these holds (this is what decides Path A vs. Path B below):
 
-- You presented a plan through plan mode and the user approved it
-  (`ExitPlanMode` accepted).
-- The plan is real code work (feature, fix, chore) in a project — not an
-  exploratory answer, not an architecture decision meant purely for
-  discussion.
-- The current working directory matches a `local_path` (or the user named
-  the project) in the registry — default `~/.claude/idea-projects.json`,
-  or wherever the user's own instructions point instead.
+- **Path A — new work**: you presented a plan through plan mode and the
+  user approved it (`ExitPlanMode` accepted), and it's real code work
+  (feature, fix, chore) — not an exploratory answer or a
+  discussion-only architecture decision.
+- **Path B — resuming tracked work**: the user asks to start/continue/pick
+  up work on an issue that's already on a registered project's board
+  (they name an issue number or URL, or point at something sitting in
+  `Backlog`/`Todo`) — even without going through plan mode first.
+
+Both paths require the current working directory to match a `local_path`
+(or the user to have named the project) in the registry — default
+`~/.claude/idea-projects.json`, or wherever the user's own instructions
+point instead.
 
 If the project isn't in the registry, **don't** create an issue, branch,
 or PR on your own — tell the user the project isn't registered and ask
@@ -42,7 +48,15 @@ earlier session — it grows). Same resolution logic as `/idea`: match by
 there's any ambiguity (e.g. a split frontend/backend pair sharing a
 product name).
 
-## 2. Create the issue (as soon as the plan is approved, before implementing)
+## 2. Which path applies
+
+- If the work has no existing issue yet (a plan just got approved for
+  something new) → **Path A**, go to step 3.
+- If the work is already tracked — the user referenced an issue
+  number/URL, or you're picking something off the board yourself → **Path
+  B**, skip straight to step 4 (don't create a duplicate issue).
+
+## 3. Path A — create the issue (as soon as the plan is approved, before implementing)
 
 Title and body come from the approved plan itself (a short, clean title;
 the body can be close to the plan verbatim, including the list of
@@ -60,9 +74,27 @@ gh issue create --repo <github_owner>/<github_repo> \
   --label "priority:<PN>"
 ```
 
-Keep the issue number (`<N>`) and the returned URL.
+Keep the issue number (`<N>`) and the returned URL, then continue to step
+5 (add to the board).
 
-## 3. Add to the board and move straight to "In Progress"
+## 4. Path B — resolve the existing issue
+
+The issue already exists — find its project item instead of creating a
+new one:
+
+```bash
+gh project item-list <project_number> --owner <github_owner> --format json \
+  | jq -r --arg url "<issue_url>" '.items[] | select(.content.url == $url)'
+```
+
+If the user only gave an issue number, resolve the URL first with
+`gh issue view <N> --repo <github_owner>/<github_repo> --json url -q .url`.
+Keep the issue number, title, and URL — same as Path A — then continue to
+step 5.
+
+## 5. Add to the board and move to "In Progress"
+
+**Path A** (item doesn't exist on the board yet):
 
 ```bash
 gh project item-add <project_number> --owner <github_owner> --url <issue_url>
@@ -72,7 +104,25 @@ gh project item-edit <project_number> --owner <github_owner> \
 
 (Skips `Backlog`/`Todo` — the work starts immediately.)
 
-## 4. Cut the branch
+**Path B** (item is already on the board, just not `In Progress` yet):
+
+```bash
+gh project item-edit <project_number> --owner <github_owner> \
+  --url <issue_url> --field "Status" --value "In Progress"
+```
+
+**Both paths** — also set the `Priority` field (P0→Urgente, P1→Alta,
+P2→Média, P3→Baixa) if it isn't set yet:
+
+```bash
+gh project item-edit <project_number> --owner <github_owner> \
+  --url <issue_url> --field "Priority" --value "<Urgente|Alta|Média|Baixa>"
+```
+
+Skip the Priority step silently if the board predates that field
+(`gh project field-list` won't show it).
+
+## 6. Cut the branch
 
 Before switching branches, run `git status` — if there are uncommitted
 changes from something else, flag it to the user instead of discarding or
@@ -95,7 +145,7 @@ branch stays local for now — no push yet.
 Tell the user in one line that the issue and branch are ready, then start
 implementing the plan on that branch, with normal incremental commits.
 
-## 5. Implementation done — ask before opening the PR
+## 7. Implementation done — ask before opening the PR
 
 When the implementation is finished, **stop and explicitly ask** whether
 it's approved to become a PR (e.g. "Implementation's ready — want me to
@@ -119,7 +169,7 @@ gh project item-edit <project_number> --owner <github_owner> \
   --url <issue_url> --field "Status" --value "In Review"
 ```
 
-## 6. Merge — ask for confirmation, then merge
+## 8. Merge — ask for confirmation, then merge
 
 Show the PR link and ask whether it's OK to merge. Once confirmed:
 
@@ -152,3 +202,8 @@ switching back to `<default_branch>` and pulling).
 - **User doesn't explicitly confirm the PR or the merge**: never skip
   either confirmation, even in a more autonomous mode — both touch shared
   state (a public push, a public PR, a merge into the default branch).
+- **Path B, multiple issues at once**: if several existing issues are
+  being picked up together (tightly coupled changes touching the same
+  files), it's fine to move all their cards to "In Progress", use one
+  branch/PR, and reference all of them (`Closes #1, Closes #2, ...`) — just
+  say so to the user instead of silently picking one.
